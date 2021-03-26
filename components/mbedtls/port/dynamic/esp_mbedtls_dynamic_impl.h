@@ -33,9 +33,6 @@
  \
     if ((_ret = _fn) != 0) { \
         ESP_LOGV(TAG, "\"%s\" result is -0x%x", # _fn, -_ret); \
-        if (_ret == MBEDTLS_ERR_SSL_CONN_EOF) {\
-            return 0; \
-        } \
         TRACE_CHECK(_fn, "fail"); \
         return _ret; \
     } \
@@ -74,12 +71,16 @@ void esp_mbedtls_free_keycert(mbedtls_ssl_context *ssl);
 void esp_mbedtls_free_keycert_cert(mbedtls_ssl_context *ssl);
 
 void esp_mbedtls_free_keycert_key(mbedtls_ssl_context *ssl);
+#endif
 
+#ifdef CONFIG_MBEDTLS_DYNAMIC_FREE_CA_CERT
 void esp_mbedtls_free_cacert(mbedtls_ssl_context *ssl);
 #endif
 
 #ifdef CONFIG_MBEDTLS_DYNAMIC_FREE_PEER_CERT
 void esp_mbedtls_free_peer_cert(mbedtls_ssl_context *ssl);
+
+bool esp_mbedtls_ssl_is_rsa(mbedtls_ssl_context *ssl);
 #endif
 
 #endif /* _DYNAMIC_IMPL_H_ */

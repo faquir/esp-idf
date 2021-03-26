@@ -42,6 +42,8 @@ typedef enum {
 #define UNIVERSAL_MAC_ADDR_NUM CONFIG_ESP32_UNIVERSAL_MAC_ADDRESSES
 #elif CONFIG_IDF_TARGET_ESP32S2
 #define UNIVERSAL_MAC_ADDR_NUM CONFIG_ESP32S2_UNIVERSAL_MAC_ADDRESSES
+#elif CONFIG_IDF_TARGET_ESP32C3
+#define UNIVERSAL_MAC_ADDR_NUM CONFIG_ESP32C3_UNIVERSAL_MAC_ADDRESSES
 #endif
 /** @endcond */
 
@@ -116,6 +118,16 @@ esp_reset_reason_t esp_reset_reason(void);
   * @return Available heap size, in bytes.
   */
 uint32_t esp_get_free_heap_size(void);
+
+/**
+  * @brief  Get the size of available internal heap.
+  *
+  * Note that the returned value may be larger than the maximum contiguous block
+  * which can be allocated.
+  *
+  * @return Available internal heap size, in bytes.
+  */
+uint32_t esp_get_free_internal_heap_size(void);
 
 /**
   * @brief Get the minimum heap that has ever been available
@@ -240,7 +252,7 @@ esp_err_t esp_derive_local_mac(uint8_t* local_mac, const uint8_t* universal_mac)
 
 /**
  * @brief Trigger a software abort
- * 
+ *
  * @param details Details that will be displayed during panic handling.
  */
 void  __attribute__((noreturn)) esp_system_abort(const char* details);
@@ -251,6 +263,8 @@ void  __attribute__((noreturn)) esp_system_abort(const char* details);
 typedef enum {
     CHIP_ESP32  = 1, //!< ESP32
     CHIP_ESP32S2 = 2, //!< ESP32-S2
+    CHIP_ESP32S3 = 4, //!< ESP32-S3
+    CHIP_ESP32C3 = 5, //!< ESP32-C3
 } esp_chip_model_t;
 
 /* Chip feature flags, used in esp_chip_info_t */
@@ -274,6 +288,18 @@ typedef struct {
  * @param[out] out_info structure to be filled
  */
 void esp_chip_info(esp_chip_info_t* out_info);
+
+
+#if CONFIG_ESP32_ECO3_CACHE_LOCK_FIX
+/**
+ * @brief Cache lock bug exists or not
+ *
+ * @return
+ *          - ture : bug exists
+ *          - false : bug not exists
+ */
+bool soc_has_cache_lock_bug(void);
+#endif
 
 #ifdef __cplusplus
 }

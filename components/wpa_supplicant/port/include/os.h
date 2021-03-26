@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "esp_err.h"
-// #include "esp32/rom/ets_sys.h"
 
 typedef time_t os_time_t;
 
@@ -34,6 +33,8 @@ struct os_time {
 	os_time_t sec;
 	suseconds_t usec;
 };
+
+#define os_reltime os_time
 
 struct os_tm {
     int sec; /* 0..59 or 60 for leap seconds */
@@ -50,7 +51,7 @@ struct os_tm {
  * Returns: 0 on success, -1 on failure
  */
 int os_get_time(struct os_time *t);
-
+#define os_get_reltime os_get_time
 
 /* Helper macros for handling struct os_time */
 
@@ -58,6 +59,7 @@ int os_get_time(struct os_time *t);
 	((a)->sec < (b)->sec || \
 	 ((a)->sec == (b)->sec && (a)->usec < (b)->usec))
 
+#define os_reltime_before os_time_before
 #define os_time_sub(a, b, res) do { \
 	(res)->sec = (a)->sec - (b)->sec; \
 	(res)->usec = (a)->usec - (b)->usec; \
@@ -66,6 +68,7 @@ int os_get_time(struct os_time *t);
 		(res)->usec += 1000000; \
 	} \
 } while (0)
+#define os_reltime_sub os_time_sub
 
 /**
  * os_mktime - Convert broken-down time into seconds since 1970-01-01
@@ -208,6 +211,10 @@ char * os_readfile(const char *name, size_t *len);
 #ifndef os_zalloc
 #define os_zalloc(s) calloc(1, (s))
 #endif
+#ifndef os_calloc
+#define os_calloc(p, s) calloc((p), (s))
+#endif
+
 #ifndef os_free
 #define os_free(p) free((p))
 #endif
@@ -278,6 +285,9 @@ char * ets_strdup(const char *s);
 #ifndef os_strstr
 #define os_strstr(h, n) strstr((h), (n))
 #endif
+#ifndef os_strlcpy
+#define os_strlcpy(d, s, n) strlcpy((d), (s), (n))
+#endif
 
 #ifndef os_snprintf
 #ifdef _MSC_VER
@@ -292,15 +302,10 @@ static inline int os_snprintf_error(size_t size, int res)
         return res < 0 || (unsigned int) res >= size;
 }
 
-/**
- * os_strlcpy - Copy a string with size bound and NUL-termination
- * @dest: Destination
- * @src: Source
- * @siz: Size of the target buffer
- * Returns: Total length of the target string (length of src) (not including
- * NUL-termination)
- *
- * This function matches in behavior with the strlcpy(3) function in OpenBSD.
- */
-size_t os_strlcpy(char *dest, const char *src, size_t siz);
+static inline void * os_realloc_array(void *ptr, size_t nmemb, size_t size)
+{
+	if (size && nmemb > (~(size_t) 0) / size)
+		return NULL;
+	return os_realloc(ptr, nmemb * size);
+}
 #endif /* OS_H */

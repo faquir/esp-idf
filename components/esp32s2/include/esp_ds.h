@@ -21,13 +21,12 @@
 extern "C" {
 #endif
 
-#define ESP_ERR_HW_CRYPTO_DS_BASE 0xc000 /*!< Starting number of HW cryptography module error codes */
-#define ESP_ERR_HW_CRYPTO_DS_HMAC_FAIL           ESP_ERR_HW_CRYPTO_DS_BASE + 0x1 /*!< HMAC peripheral problem */
-#define ESP_ERR_HW_CRYPTO_DS_INVALID_KEY         ESP_ERR_HW_CRYPTO_DS_BASE + 0x2 /*!< given HMAC key isn't correct,
-                                                                                   HMAC peripheral problem */
-#define ESP_ERR_HW_CRYPTO_DS_INVALID_DIGEST      ESP_ERR_HW_CRYPTO_DS_BASE + 0x4 /*!< message digest check failed,
-                                                                                   result is invalid */
-#define ESP_ERR_HW_CRYPTO_DS_INVALID_PADDING     ESP_ERR_HW_CRYPTO_DS_BASE + 0x5 /*!< padding check failed, but result
+#define ESP_ERR_HW_CRYPTO_DS_HMAC_FAIL           ESP_ERR_HW_CRYPTO_BASE + 0x1 /*!< HMAC peripheral problem */
+#define ESP_ERR_HW_CRYPTO_DS_INVALID_KEY         ESP_ERR_HW_CRYPTO_BASE + 0x2 /*!< given HMAC key isn't correct,
+                                                                                HMAC peripheral problem */
+#define ESP_ERR_HW_CRYPTO_DS_INVALID_DIGEST      ESP_ERR_HW_CRYPTO_BASE + 0x4 /*!< message digest check failed,
+                                                                                result is invalid */
+#define ESP_ERR_HW_CRYPTO_DS_INVALID_PADDING     ESP_ERR_HW_CRYPTO_BASE + 0x5 /*!< padding check failed, but result
                                                                                    is produced anyway and can be read*/
 
 #define ESP_DS_IV_LEN 16
@@ -50,7 +49,8 @@ typedef enum {
  * @note This struct has to match to one from the ROM code! This documentation is mostly taken from there.
  */
 typedef struct esp_digital_signature_data {
-    /* RSA LENGTH register parameters
+    /**
+     * RSA LENGTH register parameters
      * (number of words in RSA key & operands, minus one).
      *
      * Max value 127 (for RSA 4096).
@@ -66,16 +66,19 @@ typedef struct esp_digital_signature_data {
      */
     esp_digital_signature_length_t rsa_length;
 
-    /* IV value used to encrypt 'c' */
+    /**
+     * IV value used to encrypt 'c'
+     */
     uint8_t iv[ESP_DS_IV_LEN];
 
-    /* Encrypted Digital Signature parameters. Result of AES-CBC encryption
-       of plaintext values. Includes an encrypted message digest.
-    */
+    /**
+     * Encrypted Digital Signature parameters. Result of AES-CBC encryption
+     * of plaintext values. Includes an encrypted message digest.
+     */
     uint8_t c[ESP_DS_C_LEN];
 } esp_ds_data_t;
 
-/* Plaintext parameters used by Digital Signature.
+/** Plaintext parameters used by Digital Signature.
  *
  * Not used for signing with DS peripheral, but can be encrypted
  * in-device by calling esp_ds_encrypt_params()
@@ -83,11 +86,11 @@ typedef struct esp_digital_signature_data {
  * @note This documentation is mostly taken from the ROM code.
  */
 typedef struct {
-    uint32_t Y[4096/32];
-    uint32_t M[4096/32];
-    uint32_t Rb[4096/32];
-    uint32_t M_prime;
-    esp_digital_signature_length_t length;
+    uint32_t Y[4096/32];                    //!< RSA exponent
+    uint32_t M[4096/32];                    //!< RSA modulus
+    uint32_t Rb[4096/32];                   //!< RSA r inverse operand
+    uint32_t M_prime;                       //!< RSA M prime operand
+    esp_digital_signature_length_t length;  //!< RSA length
 } esp_ds_p_data_t;
 
 /**
@@ -193,4 +196,3 @@ esp_err_t esp_ds_encrypt_params(esp_ds_data_t *data,
 #ifdef __cplusplus
 }
 #endif
-

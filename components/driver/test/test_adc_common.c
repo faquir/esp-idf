@@ -3,7 +3,6 @@
 */
 #include "esp_system.h"
 #include "driver/adc.h"
-#include "driver/dac.h"
 #include "driver/rtc_io.h"
 #include "driver/gpio.h"
 #include "unity.h"
@@ -14,6 +13,9 @@
 #include "nvs_flash.h"
 #include "test_utils.h"
 #include "soc/adc_periph.h"
+
+#if !TEMPORARY_DISABLED_FOR_TARGETS(ESP32S3,ESP32C3)
+#include "driver/dac.h"
 
 static const char *TAG = "test_adc";
 
@@ -61,66 +63,96 @@ static const int adc2_ch[ADC2_TEST_CHANNEL_NUM] = {
 
 #define ADC_GET_IO_NUM(periph, channel) (adc_channel_io_map[periph][channel])
 
-static void adc_fake_tie_middle(adc_unit_t adc_unit, adc_channel_t channel)
+void adc_fake_tie_middle(adc_unit_t adc_unit, adc_channel_t channel)
 {
     gpio_num_t gpio_num = 0;
     if (adc_unit & ADC_UNIT_1) {
         gpio_num = ADC_GET_IO_NUM(0, channel);
+        TEST_ESP_OK(rtc_gpio_init(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pullup_en(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pulldown_en(gpio_num));
+        TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLUP_PULLDOWN));
+        TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_DISABLED));
     }
     if (adc_unit & ADC_UNIT_2) {
         gpio_num = ADC_GET_IO_NUM(1, channel);
+        TEST_ESP_OK(rtc_gpio_init(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pullup_en(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pulldown_en(gpio_num));
+        TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLUP_PULLDOWN));
+        TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_DISABLED));
     }
-    TEST_ESP_OK(rtc_gpio_pullup_en(gpio_num));
-    TEST_ESP_OK(rtc_gpio_pulldown_en(gpio_num));
-    TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLUP_PULLDOWN));
-    TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_DISABLED));
+    vTaskDelay(10 / portTICK_RATE_MS);
 }
 
-static void adc_fake_tie_high(adc_unit_t adc_unit, adc_channel_t channel)
+void adc_fake_tie_high(adc_unit_t adc_unit, adc_channel_t channel)
 {
     gpio_num_t gpio_num = 0;
     if (adc_unit & ADC_UNIT_1) {
         gpio_num = ADC_GET_IO_NUM(0, channel);
+        TEST_ESP_OK(rtc_gpio_init(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pullup_en(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pulldown_dis(gpio_num));
+        TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLUP_ONLY));
+        TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_OUTPUT_ONLY));
+        TEST_ESP_OK(rtc_gpio_set_level(gpio_num, 1));
     }
     if (adc_unit & ADC_UNIT_2) {
         gpio_num = ADC_GET_IO_NUM(1, channel);
+        TEST_ESP_OK(rtc_gpio_init(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pullup_en(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pulldown_dis(gpio_num));
+        TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLUP_ONLY));
+        TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_OUTPUT_ONLY));
+        TEST_ESP_OK(rtc_gpio_set_level(gpio_num, 1));
     }
-    TEST_ESP_OK(rtc_gpio_pullup_en(gpio_num));
-    TEST_ESP_OK(rtc_gpio_pulldown_dis(gpio_num));
-    TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLUP_ONLY));
-    TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_OUTPUT_ONLY));
-    TEST_ESP_OK(rtc_gpio_set_level(gpio_num, 1));
+    vTaskDelay(10 / portTICK_RATE_MS);
 }
 
-static void adc_fake_tie_low(adc_unit_t adc_unit, adc_channel_t channel)
+void adc_fake_tie_low(adc_unit_t adc_unit, adc_channel_t channel)
 {
     gpio_num_t gpio_num = 0;
     if (adc_unit & ADC_UNIT_1) {
         gpio_num = ADC_GET_IO_NUM(0, channel);
+        TEST_ESP_OK(rtc_gpio_init(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pullup_dis(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pulldown_en(gpio_num));
+        TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLDOWN_ONLY));
+        TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_OUTPUT_ONLY));
+        TEST_ESP_OK(rtc_gpio_set_level(gpio_num, 0));
     }
     if (adc_unit & ADC_UNIT_2) {
         gpio_num = ADC_GET_IO_NUM(1, channel);
+        TEST_ESP_OK(rtc_gpio_init(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pullup_dis(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pulldown_en(gpio_num));
+        TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLDOWN_ONLY));
+        TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_OUTPUT_ONLY));
+        TEST_ESP_OK(rtc_gpio_set_level(gpio_num, 0));
     }
-    TEST_ESP_OK(rtc_gpio_pullup_dis(gpio_num));
-    TEST_ESP_OK(rtc_gpio_pulldown_en(gpio_num));
-    TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_PULLDOWN_ONLY));
-    TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_OUTPUT_ONLY));
-    TEST_ESP_OK(rtc_gpio_set_level(gpio_num, 0));
+    vTaskDelay(10 / portTICK_RATE_MS);
 }
 
-static void adc_io_normal(adc_unit_t adc_unit, adc_channel_t channel)
+void adc_io_normal(adc_unit_t adc_unit, adc_channel_t channel)
 {
     gpio_num_t gpio_num = 0;
     if (adc_unit & ADC_UNIT_1) {
         gpio_num = ADC_GET_IO_NUM(0, channel);
+        TEST_ESP_OK(rtc_gpio_init(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pullup_dis(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pulldown_dis(gpio_num));
+        TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_FLOATING));
+        TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_DISABLED));
     }
     if (adc_unit & ADC_UNIT_2) {
         gpio_num = ADC_GET_IO_NUM(1, channel);
+        TEST_ESP_OK(rtc_gpio_init(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pullup_dis(gpio_num));
+        TEST_ESP_OK(rtc_gpio_pulldown_dis(gpio_num));
+        TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_FLOATING));
+        TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_DISABLED));
     }
-    TEST_ESP_OK(rtc_gpio_pullup_dis(gpio_num));
-    TEST_ESP_OK(rtc_gpio_pulldown_dis(gpio_num));
-    TEST_ESP_OK(gpio_set_pull_mode(gpio_num, GPIO_FLOATING));
-    TEST_ESP_OK(rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_DISABLED));
+    vTaskDelay(10 / portTICK_RATE_MS);
 }
 
 TEST_CASE("ADC1 rtc read", "[adc1]")
@@ -353,3 +385,5 @@ void test_adc_slope_debug(void)
     }
 #endif
 }
+
+#endif

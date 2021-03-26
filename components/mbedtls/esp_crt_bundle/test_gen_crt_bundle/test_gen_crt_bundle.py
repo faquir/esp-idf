@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 try:
     import gen_crt_bundle
 except ImportError:
-    sys.path.append("..")
+    sys.path.append('..')
     import gen_crt_bundle
 
 
@@ -22,6 +22,7 @@ pem_test_file       = 'entrust.pem'
 verified_der_bundle = 'baltimore_crt_bundle'
 verified_pem_bundle = 'entrust_crt_bundle'
 invalid_test_file   = 'invalid_crt.pem'
+non_ascii_file      = 'non_ascii_crt.pem'
 ca_crts_all_file    = 'cacrt_all.pem'
 
 
@@ -66,12 +67,18 @@ class GenCrtBundleTests(Py23TestCase):
     def test_invalid_crt_input(self):
         bundle = gen_crt_bundle.CertificateBundle()
 
-        with self.assertRaisesRegex(gen_crt_bundle.InputError, "Invalid certificate"):
+        with self.assertRaisesRegex(gen_crt_bundle.InputError, 'Invalid certificate'):
             bundle.add_from_file(test_crts_path  + invalid_test_file)
 
-        with self.assertRaisesRegex(gen_crt_bundle.InputError, "No certificate found"):
-            bundle.add_from_pem("")
+        with self.assertRaisesRegex(gen_crt_bundle.InputError, 'No certificate found'):
+            bundle.add_from_pem('')
+
+    def test_non_ascii_crt_input(self):
+        bundle = gen_crt_bundle.CertificateBundle()
+
+        bundle.add_from_file(test_crts_path  + non_ascii_file)
+        self.assertTrue(len(bundle.certificates))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

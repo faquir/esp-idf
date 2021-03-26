@@ -14,9 +14,10 @@
 #include <string.h>
 #include <stdint.h>
 #include "sdkconfig.h"
+#include "esp_attr.h"
 #include "esp_log.h"
 #include "bootloader_init.h"
-#include "bootloader_flash.h"
+#include "bootloader_flash_priv.h"
 #include "bootloader_flash_config.h"
 #include "bootloader_random.h"
 #include "bootloader_clock.h"
@@ -28,7 +29,7 @@
 
 static const char *TAG = "boot";
 
-esp_image_header_t bootloader_image_hdr;
+esp_image_header_t WORD_ALIGNED_ATTR bootloader_image_hdr;
 
 void bootloader_clear_bss_section(void)
 {
@@ -99,11 +100,4 @@ void bootloader_print_banner(void)
 {
     ESP_LOGI(TAG, "ESP-IDF %s 2nd stage bootloader", IDF_VER);
     ESP_LOGI(TAG, "compile time " __TIME__);
-}
-
-void __assert_func(const char *file, int line, const char *func, const char *expr)
-{
-    ESP_LOGE(TAG, "Assert failed in %s, %s:%d (%s)", func, file, line, expr);
-    while (1) {
-    }
 }

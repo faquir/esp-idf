@@ -19,8 +19,10 @@
 #include "esp_wifi.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#if CONFIG_SNIFFER_PCAP_DESTINATION_SD
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
+#endif
 #include "nvs_flash.h"
 #include "sdmmc_cmd.h"
 #include "cmd_system.h"
@@ -177,15 +179,22 @@ void app_main(void)
 
     /* Initialize WiFi */
     initialize_wifi();
+    esp_console_repl_t *repl = NULL;
     esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
 #if CONFIG_SNIFFER_STORE_HISTORY
     initialize_filesystem();
     repl_config.history_save_path = HISTORY_FILE_PATH;
 #endif
     repl_config.prompt = "sniffer>";
-    /* Initialize Console REPL environment */
-    ESP_ERROR_CHECK(esp_console_repl_init(&repl_config));
 
+    // install console REPL environment
+#if CONFIG_ESP_CONSOLE_UART
+    esp_console_dev_uart_config_t uart_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
+#elif CONFIG_ESP_CONSOLE_USB_CDC
+    esp_console_dev_usb_cdc_config_t cdc_config = ESP_CONSOLE_DEV_CDC_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_usb_cdc(&cdc_config, &repl_config, &repl));
+#endif
 
     /* Register commands */
 #if CONFIG_SNIFFER_PCAP_DESTINATION_SD
@@ -205,5 +214,6 @@ void app_main(void)
     printf(" |                                                     |\n");
     printf(" =======================================================\n\n");
 
-    ESP_ERROR_CHECK(esp_console_repl_start());
+    // start console REPL
+    ESP_ERROR_CHECK(esp_console_start_repl(repl));
 }

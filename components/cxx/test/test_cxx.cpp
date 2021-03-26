@@ -44,16 +44,25 @@ TEST_CASE("can use std::vector", "[cxx]")
     TEST_ASSERT_EQUAL(51, std::accumulate(std::begin(v), std::end(v), 0));
 }
 
-/* Note: When first exception (in system) is thrown this test produces memory leaks report (~500 bytes):
-   - 392 bytes (can vary) as libunwind allocates memory to keep stack frames info to handle exceptions.
-     This info is kept until global destructors are called by __do_global_dtors_aux()
+/* Note: When first exception (in system) is thrown this test produces memory leaks report (~300 bytes):
    - 8 bytes are allocated by __cxa_get_globals() to keep __cxa_eh_globals
    - 16 bytes are allocated by pthread_setspecific() which is called by __cxa_get_globals() to init TLS var for __cxa_eh_globals
    - 88 bytes are allocated by pthread_setspecific() to init internal lock
+   - some more memory...
    */
 #ifdef CONFIG_COMPILER_CXX_EXCEPTIONS
 
-TEST_CASE("c++ exceptions work", "[cxx] [exceptions] [leaks=800]")
+#if CONFIG_IDF_TARGET_ESP32
+#define LEAKS "300"
+#elif CONFIG_IDF_TARGET_ESP32S2
+#define LEAKS "800"
+#elif CONFIG_IDF_TARGET_ESP32C3
+#define LEAKS "600"
+#else
+#error "unknown target in CXX tests, can't set leaks threshold"
+#endif
+
+TEST_CASE("c++ exceptions work", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     int thrown_value;
     try {
@@ -65,7 +74,7 @@ TEST_CASE("c++ exceptions work", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ bool exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ bool exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     bool thrown_value = false;
     try {
@@ -77,7 +86,7 @@ TEST_CASE("c++ bool exception", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ void exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ void exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     void* thrown_value = 0;
     try {
@@ -89,7 +98,7 @@ TEST_CASE("c++ void exception", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ uint64_t exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ uint64_t exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     uint64_t thrown_value = 0;
     try {
@@ -101,7 +110,7 @@ TEST_CASE("c++ uint64_t exception", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ char exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ char exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     char thrown_value = '0';
     try {
@@ -113,7 +122,7 @@ TEST_CASE("c++ char exception", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ wchar exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ wchar exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     wchar_t thrown_value = 0;
     try {
@@ -125,7 +134,7 @@ TEST_CASE("c++ wchar exception", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ float exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ float exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     float thrown_value = 0;
     try {
@@ -137,7 +146,7 @@ TEST_CASE("c++ float exception", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ double exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ double exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     double thrown_value = 0;
     try {
@@ -149,7 +158,7 @@ TEST_CASE("c++ double exception", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ const char* exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ const char* exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     const char *thrown_value = 0;
     try {
@@ -167,7 +176,7 @@ public:
     NonExcTypeThrowee(int value) : value(value) { }
 };
 
-TEST_CASE("c++ any class exception", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ any class exception", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     int thrown_value = 0;
     try {
@@ -185,7 +194,7 @@ public:
     ExcTypeThrowee(int value) : value(value) { }
 };
 
-TEST_CASE("c++ std::exception child", "[cxx] [exceptions] [leaks=800]")
+TEST_CASE("c++ std::exception child", "[cxx] [exceptions] [leaks=" LEAKS "]")
 {
     int thrown_value = 0;
     try {
@@ -197,7 +206,7 @@ TEST_CASE("c++ std::exception child", "[cxx] [exceptions] [leaks=800]")
     printf("OK?\n");
 }
 
-TEST_CASE("c++ exceptions emergency pool", "[cxx] [exceptions] [ignore]")
+TEST_CASE("c++ exceptions emergency pool", "[cxx] [exceptions] [ignore] [leaks=" LEAKS "]")
 {
     void **p, **pprev = NULL;
     int thrown_value = 0;
@@ -313,7 +322,3 @@ template<typename T> __attribute__((unused)) static void test_binary_operators()
 //Add more types here. If any flags cannot pass the build, use FLAG_ATTR in esp_attr.h
 #include "hal/timer_types.h"
 template void test_binary_operators<timer_intr_t>();
-
-
-
-

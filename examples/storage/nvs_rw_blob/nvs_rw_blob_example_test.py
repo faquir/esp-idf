@@ -1,11 +1,12 @@
-from tiny_test_fw import Utility
 import random
 import re
 import time
+
 import ttfw_idf
+from tiny_test_fw import Utility
 
 
-@ttfw_idf.idf_example_test(env_tag='Example_WIFI')
+@ttfw_idf.idf_example_test(env_tag='Example_GENERIC')
 def test_examples_nvs_rw_blob(env, extra_data):
 
     dut = env.get_dut('nvs_rw_blob', 'examples/storage/nvs_rw_blob')

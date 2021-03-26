@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <esp_types.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include "sdkconfig.h"
+#include "esp_types.h"
 #include "esp_log.h"
 #include "sys/lock.h"
 #include "soc/rtc.h"
@@ -28,9 +29,6 @@
 #include "driver/rtc_cntl.h"
 #include "driver/gpio.h"
 #include "driver/adc.h"
-#include "sdkconfig.h"
-
-#include "esp32/rom/ets_sys.h"
 
 #ifndef NDEBUG
 // Enable built-in checks in queue.h in debug builds
@@ -42,7 +40,6 @@
 
 #define ADC_MAX_MEAS_NUM_DEFAULT      (255)
 #define ADC_MEAS_NUM_LIM_DEFAULT      (1)
-#define SAR_ADC_CLK_DIV_DEFUALT       (2)
 
 #define DIG_ADC_OUTPUT_FORMAT_DEFUALT (ADC_DIGI_FORMAT_12BIT)
 #define DIG_ADC_ATTEN_DEFUALT         (ADC_ATTEN_DB_11)
@@ -59,7 +56,7 @@ static const char *ADC_TAG = "ADC";
 
 #define ADC_CHECK(a, str, ret_val) ({                                               \
     if (!(a)) {                                                                     \
-        ESP_LOGE(ADC_TAG,"%s:%d (%s):%s", __FILE__, __LINE__, __FUNCTION__, str);   \
+        ESP_LOGE(ADC_TAG,"%s(%d): %s", __FUNCTION__, __LINE__, str);                \
         return (ret_val);                                                           \
     }                                                                               \
 })
@@ -96,14 +93,13 @@ esp_err_t adc_i2s_mode_init(adc_unit_t adc_unit, adc_channel_t channel)
         ADC_CHANNEL_CHECK(ADC_NUM_2, channel);
     }
 
-    adc_hal_digi_pattern_table_t adc1_pattern[1];
-    adc_hal_digi_pattern_table_t adc2_pattern[1];
-    adc_hal_digi_config_t dig_cfg = {
+    adc_digi_pattern_table_t adc1_pattern[1];
+    adc_digi_pattern_table_t adc2_pattern[1];
+    adc_digi_config_t dig_cfg = {
         .conv_limit_en = ADC_MEAS_NUM_LIM_DEFAULT,
         .conv_limit_num = ADC_MAX_MEAS_NUM_DEFAULT,
-        .clk_div = SAR_ADC_CLK_DIV_DEFUALT,
         .format = DIG_ADC_OUTPUT_FORMAT_DEFUALT,
-        .conv_mode = (adc_hal_digi_convert_mode_t)adc_unit,
+        .conv_mode = (adc_digi_convert_mode_t)adc_unit,
     };
 
     if (adc_unit & ADC_UNIT_1) {
@@ -120,34 +116,42 @@ esp_err_t adc_i2s_mode_init(adc_unit_t adc_unit, adc_channel_t channel)
         dig_cfg.adc2_pattern_len = 1;
         dig_cfg.adc2_pattern = adc2_pattern;
     }
-
+    adc_gpio_init(adc_unit, channel);
     ADC_ENTER_CRITICAL();
-    adc_hal_digi_init();
+    adc_hal_init();
     adc_hal_digi_controller_config(&dig_cfg);
     ADC_EXIT_CRITICAL();
 
     return ESP_OK;
 }
 
+esp_err_t adc_digi_init(void)
+{
+    ADC_ENTER_CRITICAL();
+    adc_hal_init();
+    ADC_EXIT_CRITICAL();
+    return ESP_OK;
+}
+
+esp_err_t adc_digi_deinit(void)
+{
+    ADC_ENTER_CRITICAL();
+    adc_hal_digi_deinit();
+    ADC_EXIT_CRITICAL();
+    return ESP_OK;
+}
+
+esp_err_t adc_digi_controller_config(const adc_digi_config_t *config)
+{
+    ADC_ENTER_CRITICAL();
+    adc_hal_digi_controller_config(config);
+    ADC_EXIT_CRITICAL();
+    return ESP_OK;
+}
+
 /*---------------------------------------------------------------
                     RTC controller setting
 ---------------------------------------------------------------*/
-
-esp_err_t adc2_vref_to_gpio(gpio_num_t gpio)
-{
-    ADC_ENTER_CRITICAL();
-    adc_hal_set_power_manage(ADC_POWER_SW_ON);
-    ADC_EXIT_CRITICAL();
-    if (adc_hal_vref_output(gpio) != true) {
-        return ESP_ERR_INVALID_ARG;
-    }
-    //Configure RTC gpio
-    rtc_gpio_init(gpio);
-    rtc_gpio_set_direction(gpio, RTC_GPIO_MODE_DISABLED);
-    rtc_gpio_pullup_dis(gpio);
-    rtc_gpio_pulldown_dis(gpio);
-    return ESP_OK;
-}
 
 /*---------------------------------------------------------------
                         HALL SENSOR
@@ -157,7 +161,7 @@ static int hall_sensor_get_value(void)    //hall sensor without LNA
 {
     int hall_value;
 
-    adc_power_on();
+    adc_power_acquire();
 
     ADC_ENTER_CRITICAL();
     /* disable other peripherals. */
@@ -166,8 +170,10 @@ static int hall_sensor_get_value(void)    //hall sensor without LNA
     // set controller
     adc_hal_set_controller( ADC_NUM_1, ADC_CTRL_RTC );
     hall_value = adc_hal_hall_convert();
+    adc_hal_hall_disable();
     ADC_EXIT_CRITICAL();
 
+    adc_power_release();
     return hall_value;
 }
 

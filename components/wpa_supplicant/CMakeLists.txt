@@ -6,6 +6,7 @@ set(srcs "port/os_xtensa.c"
     "src/common/sae.c"
     "src/common/wpa_common.c"
     "src/common/dpp.c"
+    "src/utils/bitfield.c"
     "src/crypto/aes-ctr.c"
     "src/crypto/aes-siv.c"
     "src/crypto/sha256-kdf.c"
@@ -17,16 +18,17 @@ set(srcs "port/os_xtensa.c"
     "src/crypto/aes-omac1.c"
     "src/crypto/aes-unwrap.c"
     "src/crypto/aes-wrap.c"
-    "src/crypto/aes-omac1.c"
     "src/crypto/sha256-tlsprf.c"
     "src/crypto/bignum.c"
     "src/crypto/ccmp.c"
+    "src/crypto/crypto_mbedtls.c"
     "src/crypto/crypto_mbedtls-bignum.c"
     "src/crypto/crypto_mbedtls-ec.c"
     "src/crypto/crypto_ops.c"
     "src/crypto/crypto_internal-cipher.c"
     "src/crypto/crypto_internal-modexp.c"
     "src/crypto/crypto_internal-rsa.c"
+    "src/crypto/crypto_mbedtls-rsa.c"
     "src/crypto/crypto_internal.c"
     "src/crypto/des-internal.c"
     "src/crypto/dh_group5.c"
@@ -41,6 +43,10 @@ set(srcs "port/os_xtensa.c"
     "src/crypto/sha1.c"
     "src/crypto/sha256-internal.c"
     "src/crypto/sha256.c"
+    "src/crypto/sha1-tlsprf.c"
+    "src/crypto/sha256-tlsprf.c"
+    "src/crypto/sha384-tlsprf.c"
+    "src/crypto/sha256-prf.c"
     "src/eap_peer/chap.c"
     "src/eap_peer/eap.c"
     "src/eap_peer/eap_common.c"
@@ -57,26 +63,10 @@ set(srcs "port/os_xtensa.c"
     "src/esp_supplicant/esp_wpas_glue.c"
     "src/esp_supplicant/esp_wps.c"
     "src/esp_supplicant/esp_wpa3.c"
+    "src/esp_supplicant/esp_dpp.c"
     "src/rsn_supp/pmksa_cache.c"
     "src/rsn_supp/wpa.c"
     "src/rsn_supp/wpa_ie.c"
-    "src/tls/asn1.c"
-    "src/tls/bignum.c"
-    "src/tls/pkcs1.c"
-    "src/tls/pkcs5.c"
-    "src/tls/pkcs8.c"
-    "src/tls/rsa.c"
-    "src/tls/tls_internal.c"
-    "src/tls/tlsv1_client.c"
-    "src/tls/tlsv1_client_read.c"
-    "src/tls/tlsv1_client_write.c"
-    "src/tls/tlsv1_common.c"
-    "src/tls/tlsv1_cred.c"
-    "src/tls/tlsv1_record.c"
-    "src/tls/tlsv1_server.c"
-    "src/tls/tlsv1_server_read.c"
-    "src/tls/tlsv1_server_write.c"
-    "src/tls/x509v3.c"
     "src/utils/base64.c"
     "src/utils/common.c"
     "src/utils/ext_password.c"
@@ -94,7 +84,45 @@ set(srcs "port/os_xtensa.c"
     "src/wps/wps_registrar.c"
     "src/wps/wps_validate.c")
 
-idf_component_register(SRCS "${srcs}"
+if(CONFIG_WPA_MBEDTLS_CRYPTO)
+    set(tls_src "src/crypto/tls_mbedtls.c")
+else()
+    set(tls_src
+    "src/tls/asn1.c"
+    "src/tls/bignum.c"
+    "src/tls/pkcs1.c"
+    "src/tls/pkcs5.c"
+    "src/tls/pkcs8.c"
+    "src/tls/rsa.c"
+    "src/tls/tls_internal.c"
+    "src/tls/tlsv1_client.c"
+    "src/tls/tlsv1_client_read.c"
+    "src/tls/tlsv1_client_write.c"
+    "src/tls/tlsv1_common.c"
+    "src/tls/tlsv1_cred.c"
+    "src/tls/tlsv1_record.c"
+    "src/tls/tlsv1_server.c"
+    "src/tls/tlsv1_server_read.c"
+    "src/tls/tlsv1_server_write.c"
+    "src/tls/x509v3.c"
+    )
+endif()
+
+if(CONFIG_WPA_11KV_SUPPORT)
+    set(roaming_src
+    "src/common/rrm.c"
+    "src/common/wnm_sta.c"
+    "src/common/bss.c"
+    "src/common/scan.c"
+    "src/common/ieee802_11_common.c"
+    "src/esp_supplicant/esp_common.c"
+    "src/esp_supplicant/esp_scan.c"
+    )
+else()
+    set(roaming_src "")
+endif()
+
+idf_component_register(SRCS "${srcs}" "${tls_src}" "${roaming_src}"
                     INCLUDE_DIRS include port/include include/esp_supplicant
                     PRIV_INCLUDE_DIRS src
                     PRIV_REQUIRES mbedtls esp_timer)
@@ -117,7 +145,13 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE
     ESP32_WORKAROUND
     CONFIG_ECC
     CONFIG_IEEE80211W
-    CONFIG_WPA3_SAE
     CONFIG_SHA256
     CONFIG_DPP
+    CONFIG_WNM
     )
+
+if(CONFIG_ESP32_WIFI_ENABLE_WPA3_SAE)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE CONFIG_WPA3_SAE)
+endif()
+
+set_property(TARGET ${COMPONENT_LIB} APPEND PROPERTY LINK_INTERFACE_MULTIPLICITY 3)

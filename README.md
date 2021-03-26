@@ -2,7 +2,7 @@
 
 * [中文版](./README_CN.md)
 
-ESP-IDF is the official development framework for the [ESP32 and ESP32-S Series SoCs](https://www.espressif.com/en/products/hardware/soc).
+ESP-IDF is the official development framework for the **ESP32** and **ESP32-S** Series SoCs provided for Windows, Linux and macOS.
 
 # Developing With ESP-IDF
 
@@ -10,8 +10,13 @@ ESP-IDF is the official development framework for the [ESP32 and ESP32-S Series 
 
 See setup guides for detailed instructions to set up the ESP-IDF:
 
-* [Getting Started Guide for the stable ESP-IDF version](https://docs.espressif.com/projects/esp-idf/en/stable/get-started/)
-* [Getting Started Guide for the latest (master branch) ESP-IDF version](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/)
+| Chip | Getting Started Guides for ESP-IDF |
+|:----:|:----|
+| <img src="docs/_static/chip-esp32.svg" height="90" alt="ESP32"> |  <ul><li>[stable](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/) version</li><li>[latest (master branch)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/) version</li></ul> |
+| <img src="docs/_static/chip-esp32-s2.svg" height="105" alt="ESP32-S2"> | <ul><li>[stable](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s2/get-started/) version</li><li>[latest (master branch)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/get-started/) version</li></ul> |
+| <img src="docs/_static/chip-esp32-c3.svg" height="75" alt="ESP32-C3"> | <ul><li>[latest (master branch)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/get-started/) version</li></ul> |
+
+**Note:** Each ESP-IDF release has its own documentation. Please see Section [Versions](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/versions.html) how to find documentation and how to checkout specific release of ESP-IDF.
 
 ### Non-GitHub forks
 
@@ -35,25 +40,16 @@ See the Getting Started guide links above for a detailed setup guide. This is a 
 
 ## Setup Build Environment
 
-(See Getting Started guide for a full list of required steps with details.)
+(See the Getting Started guide listed above for a full list of required steps with more details.)
 
-* Install host build dependencies mentioned in Getting Started guide.
-* Add `tools/` directory to the PATH
-* Run `python -m pip install -r requirements.txt` to install Python dependencies
+* Install host build dependencies mentioned in the Getting Started guide.
+* Run the install script to set up the build environment. The options include `install.bat` or `install.ps1` for Windows, and `install.sh` or `install.fish` for Unix shells.
+* Run the export script on Windows (`export.bat`) or source it on Unix (`source export.sh`) in every shell environment before using ESP-IDF.
 
 ## Configuring the Project
 
-`idf.py menuconfig`
-
-* Opens a text-based configuration menu for the project.
-* Use up & down arrow keys to navigate the menu.
-* Use Enter key to go into a submenu, Escape key to go out or to exit.
-* Type `?` to see a help screen. Enter key exits the help screen.
-* Use Space key, or `Y` and `N` keys to enable (Yes) and disable (No) configuration items with checkboxes "`[*]`"
-* Pressing `?` while highlighting a configuration item displays help about that item.
-* Type `/` to search the configuration items.
-
-Once done configuring, press Escape multiple times to exit and say "Yes" to save the new configuration when prompted.
+* `idf.py set-target <chip_name>` sets the target of the project to `<chip_name>`. Run `idf.py set-target` without any arguments to see a list of supported targets.
+* `idf.py menuconfig` opens a text-based configuration menu where you can configure the project.
 
 ## Compiling the Project
 
